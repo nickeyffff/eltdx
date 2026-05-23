@@ -1,0 +1,25 @@
+name: Auto Sync Fork
+
+on:
+  schedule:
+    # 每天 UTC 时间 0 点（北京时间早上 8 点）自动执行同步
+    - cron: '0 0 * * *'
+  workflow_dispatch: # 允许你随时在网页上手动点击按钮触发同步
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+
+      - name: Sync upstream changes
+        uses: aormsby/fork-checker-action@v2.5.0
+        with:
+          upstream_owner: "electkismet"
+          upstream_repo: "eltdx"
+          upstream_branch: "main"     # 如果原仓库是 master 分支，这里改写为 master
+          target_branch: "main"       # 你自己仓库里对应要同步的分支
+          github_token: ${{ secrets.GITHUB_TOKEN }}
