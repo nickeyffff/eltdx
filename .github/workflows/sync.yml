@@ -6,19 +6,22 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch: # 允许手动点击触发
 
+# 在全局配置环境变量，强制让 Actions 提前启用 Node.js 24 运行环境
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      # 1. 检出你自己的仓库代码
+      # 1. 升级到支持新环境的 checkout（这里依然保留 v4，通过环境变量强制其运行在 Node 24 上）
       - name: Checkout target repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # 必须使用本地 token 维持认证状态
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 2. 配置 Git 身份信息（Git 变动需要署名）
+      # 2. 配置 Git 身份信息
       - name: Configure Git
         run: |
           git config --global user.name "github-actions[bot]"
@@ -27,17 +30,8 @@ jobs:
       # 3. 添加上游源仓库，拉取并合并
       - name: Sync from Upstream
         run: |
-          # 添加原仓库作为 upstream
           git remote add upstream https://github.com/electkismet/eltdx.git
-          
-          # 获取原仓库最新分支数据
           git fetch upstream
-          
-          # 切换到你的 main 分支（如果你的默认分支叫 master，请把下面两处的 main 改成 master）
           git checkout main
-          
-          # 将原仓库的 main 分支合并进来
           git merge upstream/main --ff-only || git merge upstream/main -m "Merge upstream changes"
-          
-          # 推送回你自己的 GitHub 仓库
           git push origin main
