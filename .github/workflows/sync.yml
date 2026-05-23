@@ -2,24 +2,42 @@ name: Auto Sync Fork
 
 on:
   schedule:
-    # 每天 UTC 时间 0 点（北京时间早上 8 点）自动执行同步
+    # 每天北京时间早上 8 点自动执行
     - cron: '0 0 * * *'
-  workflow_dispatch: # 允许你随时在网页上手动点击按钮触发同步
+  workflow_dispatch: # 允许手动点击触发
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
+      # 1. 检出你自己的仓库代码
       - name: Checkout target repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
+          # 必须使用本地 token 维持认证状态
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Sync upstream changes
-        uses: aormsby/fork-checker-action@v2.5.0
-        with:
-          upstream_owner: "electkismet"
-          upstream_repo: "eltdx"
-          upstream_branch: "main"     # 如果原仓库是 master 分支，这里改写为 master
-          target_branch: "main"       # 你自己仓库里对应要同步的分支
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+      # 2. 配置 Git 身份信息（Git 变动需要署名）
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      # 3. 添加上游源仓库，拉取并合并
+      - name: Sync from Upstream
+        run: |
+          # 添加原仓库作为 upstream
+          git remote add upstream https://github.com/electkismet/eltdx.git
+          
+          # 获取原仓库最新分支数据
+          git fetch upstream
+          
+          # 切换到你的 main 分支（如果你的默认分支叫 master，请把下面两处的 main 改成 master）
+          git checkout main
+          
+          # 将原仓库的 main 分支合并进来
+          git merge upstream/main --ff-only || git merge upstream/main -m "Merge upstream changes"
+          
+          # 推送回你自己的 GitHub 仓库
+          git push origin main
