@@ -1,5 +1,10 @@
 name: Auto Sync Fork
 
+permissions:
+  contents: write
+  workflows: write  # ← 这是关键权限
+  pull-requests: write
+  
 on:
   schedule:
     # 每天北京时间早上 8 点自动执行
